@@ -101,6 +101,14 @@ Claude's first skeleton didn't link Scheduler to Owner, meaning tasks
 added to pets wouldn't appear in the schedule. I caught this through AI 
 review and confirmed it made sense before accepting the fix. I also ran 
 the demo script to verify the output looked correct before committing.
+
+One example: Claude initially generated a Scheduler that kept its own 
+task list separately from Pet. I rejected this because it would cause 
+bugs where tasks added to pets wouldn't show in the schedule. I 
+restructured it so Scheduler reads directly from the Owner's pets instead.
+
+Using Claude as a focused tool for each phase helped me stay organized — 
+I treated it like a contractor I directed, not an autopilot I followed.
 ---
 
 ## 4. Testing and Verification
@@ -146,3 +154,34 @@ and show recurring tasks generating automatically the next day.
 Designing the system with clear class responsibilities first made 
 connecting it to a UI much easier. AI was most helpful when given 
 specific context about what already existed in the code.
+
+The most important thing I learned is that AI is most useful when you 
+already understand the problem. Knowing what classes I needed and why 
+made every AI prompt more effective and every suggestion easier to evaluate
+
+
+## Prompt Comparison: Claude vs Claude Code
+
+For the recurring task logic, I asked both Claude (claude.ai) and 
+Claude Code (in VS Code) the same question:
+
+**Prompt:** "How should a Scheduler handle recurring tasks when they 
+are marked complete — generate the next occurrence automatically?"
+
+**Claude (claude.ai):**
+Generated a `next_occurrence()` method on the Task class itself, 
+returning a new Task with the due date shifted by recurrence_interval. 
+The Scheduler then called this method and added the result to the pet. 
+This was modular and clean — the Task knew how to copy itself.
+
+**Claude Code (VS Code):**
+Suggested adding the logic directly inside `mark_complete()` on Task, 
+so completing a task would automatically create the next one. This was 
+more automated but less predictable — side effects inside mark_complete 
+made the behavior harder to test and reason about.
+
+**Decision:**
+I kept Claude's approach (next_occurrence() as a separate method called 
+by the Scheduler) because it kept responsibilities clear — Task handles 
+its own data, Scheduler handles scheduling logic. The Claude Code version 
+was clever but violated the single responsibility principle.
