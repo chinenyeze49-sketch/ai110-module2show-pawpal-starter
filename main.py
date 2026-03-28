@@ -1,6 +1,7 @@
-"""PawPal+ demo script — tests sorting, filtering, recurring tasks, conflicts."""
+"""PawPal+ demo script — professional CLI output with tabulate."""
 
 from datetime import datetime, timedelta
+from tabulate import tabulate
 from pawpal_system import Task, Pet, Owner, Scheduler
 
 owner = Owner(name="Alex Rivera", email="alex@example.com", phone="555-0100")
@@ -12,7 +13,6 @@ owner.add_pet(whiskers)
 
 today = datetime.today()
 
-# Add tasks out of order to test sorting
 buddy.add_task(Task(
     title="Afternoon walk",
     task_type="walk",
@@ -33,7 +33,6 @@ whiskers.add_task(Task(
     due_time=today.replace(hour=8, minute=20),
     priority=1,
 ))
-# Conflict task — within 30 mins of medication
 whiskers.add_task(Task(
     title="Vet appointment",
     task_type="appointment",
@@ -43,38 +42,44 @@ whiskers.add_task(Task(
 
 scheduler = Scheduler(owner=owner)
 
-print("=== Sorted by Time ===")
-for t in scheduler.sort_by_time():
-    print(f"  {t.due_time.strftime('%H:%M')} | {t.title}")
+def priority_label(p):
+    return {1: "🔴 High", 2: "🟡 Medium"}.get(p, "🟢 Low")
 
-print("\n=== Sorted by Priority ===")
-for t in scheduler.sort_by_priority():
-    print(f"  [{t.priority}] {t.title}")
+def task_icon(t):
+    return {"feeding": "🍖", "walk": "🦮", "medication": "💊", "appointment": "🏥"}.get(t, "📌")
 
-print("\n=== Pending Tasks Only ===")
-for t in scheduler.filter_by_status(completed=False):
-    print(f"  {t.title}")
+print("\n╔══════════════════════════════╗")
+print("║      🐾 PawPal+ Schedule      ║")
+print("╚══════════════════════════════╝\n")
 
-print("\n=== Buddy's Tasks ===")
-for t in scheduler.filter_by_pet("Buddy"):
-    print(f"  {t.title}")
+rows = [
+    [
+        task_icon(t.task_type),
+        t.due_time.strftime("%H:%M"),
+        priority_label(t.priority),
+        t.title,
+        t.task_type,
+        "✓ Done" if t.is_completed else "○ Pending",
+    ]
+    for t in scheduler.sort_by_time()
+]
 
-print("\n=== Conflicts ===")
+print(tabulate(
+    rows,
+    headers=["", "Time", "Priority", "Task", "Type", "Status"],
+    tablefmt="rounded_outline"
+))
+
 conflicts = scheduler.detect_conflicts()
 if conflicts:
-    for t in conflicts:
-        print(f"  ⚠ {t.title} @ {t.due_time.strftime('%H:%M')}")
+    print("\n⚠  CONFLICTS DETECTED:")
+    conflict_rows = [[t.title, t.due_time.strftime("%H:%M")] for t in conflicts]
+    print(tabulate(conflict_rows, headers=["Task", "Time"], tablefmt="rounded_outline"))
 else:
-    print("  No conflicts.")
+    print("\n✅ No scheduling conflicts.")
 
-print("\n=== Recurring Task Generation ===")
-# Mark morning feeding complete and generate next occurrence
-for pet in owner.get_pets():
-    for task in pet.get_tasks():
-        if task.title == "Morning feeding":
-            task.mark_complete()
-
-new_tasks = scheduler.generate_recurring_tasks()
-print(f"  Generated {len(new_tasks)} new recurring task(s):")
-for t in new_tasks:
-    print(f"  → {t.title} due {t.due_time.strftime('%Y-%m-%d %H:%M')}")
+slot = scheduler.find_next_available_slot()
+if slot:
+    print(f"\n📅 Next available slot: {slot.strftime('%H:%M')}")
+else:
+    print("\n📅 No available slots today.")
