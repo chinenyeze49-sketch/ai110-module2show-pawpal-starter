@@ -11,7 +11,6 @@ if "owner" not in st.session_state:
     loaded = Owner.load_from_json()
     st.session_state.owner = loaded
 
-# ── Owner ─────────────────────────────────────────────────────────────────────
 st.subheader("Owner")
 owner_name = st.text_input("Your name", value="Alex Rivera")
 owner_email = st.text_input("Email", value="alex@example.com")
@@ -21,7 +20,7 @@ if st.button("Set Owner"):
     st.session_state.owner = Owner(name=owner_name, email=owner_email, phone=owner_phone)
     st.success(f"Owner set: {owner_name}")
 
-if st.button("💾 Save Data"):
+if st.button("Save Data"):
     if st.session_state.owner:
         st.session_state.owner.save_to_json()
         st.success("Data saved to data.json!")
@@ -32,7 +31,6 @@ if st.session_state.owner is None:
 
 owner = st.session_state.owner
 
-# ── Add a Pet ─────────────────────────────────────────────────────────────────
 st.divider()
 st.subheader("Add a Pet")
 col1, col2 = st.columns(2)
@@ -53,7 +51,6 @@ if owner.get_pets():
 else:
     st.info("No pets yet.")
 
-# ── Add a Task ────────────────────────────────────────────────────────────────
 st.divider()
 st.subheader("Add a Task")
 
@@ -87,7 +84,6 @@ else:
         selected_pet.add_task(task)
         st.success(f"Task '{task_title}' added to {selected_pet_name}!")
 
-# ── Schedule ──────────────────────────────────────────────────────────────────
 st.divider()
 st.subheader("Today's Schedule")
 
@@ -110,22 +106,33 @@ if st.button("Generate Schedule"):
     if not tasks:
         st.info("No tasks to show.")
     else:
-        table_data = [
-            {
-                "Time": t.due_time.strftime("%H:%M"),
-                "Priority": t.priority,
-                "Task": t.title,
-                "Type": t.task_type,
-                "Done": "✓" if t.is_completed else "○",
-            }
-            for t in tasks
-        ]
-        st.table(table_data)
+        st.markdown("### Schedule")
+        for t in tasks:
+            if t.priority == 1:
+                color = "🔴"
+            elif t.priority == 2:
+                color = "🟡"
+            else:
+                color = "🟢"
+            if t.task_type == "feeding":
+                icon = "🍖"
+            elif t.task_type == "walk":
+                icon = "🦮"
+            elif t.task_type == "medication":
+                icon = "💊"
+            elif t.task_type == "appointment":
+                icon = "🏥"
+            else:
+                icon = "📌"
+            status = "✓" if t.is_completed else "○"
+            st.markdown(
+                f"{color} {icon} **{t.due_time.strftime('%H:%M')}** | "
+                f"Priority {t.priority} | {t.title} | `{t.task_type}` | {status}"
+            )
 
-    # Conflict warnings
     conflicts = scheduler.detect_conflicts()
     if conflicts:
-        st.warning("⚠ Scheduling conflicts detected:")
+        st.warning("Scheduling conflicts detected:")
         for t in conflicts:
             st.markdown(f"- **{t.title}** @ {t.due_time.strftime('%H:%M')} — within 30 mins of another task")
     else:
