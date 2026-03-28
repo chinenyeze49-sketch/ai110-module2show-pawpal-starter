@@ -1,5 +1,7 @@
 """PawPal+ - A pet care management system."""
 
+import json
+import os
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from typing import List, Optional
@@ -81,6 +83,72 @@ class Owner:
         """Return all pets belonging to this owner."""
         return self.pets
 
+    def save_to_json(self, filepath: str = "data.json") -> None:
+        """Save owner, pets, and tasks to a JSON file."""
+        data = {
+            "name": self.name,
+            "email": self.email,
+            "phone": self.phone,
+            "pets": [
+                {
+                    "name": pet.name,
+                    "species": pet.species,
+                    "breed": pet.breed,
+                    "age": pet.age,
+                    "tasks": [
+                        {
+                            "title": task.title,
+                            "task_type": task.task_type,
+                            "due_time": task.due_time.isoformat(),
+                            "priority": task.priority,
+                            "is_recurring": task.is_recurring,
+                            "is_completed": task.is_completed,
+                            "recurrence_interval_days": (
+                                task.recurrence_interval.days
+                                if task.recurrence_interval else None
+                            ),
+                        }
+                        for task in pet.get_tasks()
+                    ],
+                }
+                for pet in self.pets
+            ],
+        }
+        with open(filepath, "w") as f:
+            json.dump(data, f, indent=2)
+
+    @staticmethod
+    def load_from_json(filepath: str = "data.json") -> Optional["Owner"]:
+        """Load owner, pets, and tasks from a JSON file. Returns None if file missing."""
+        if not os.path.exists(filepath):
+            return None
+        with open(filepath, "r") as f:
+            data = json.load(f)
+        owner = Owner(name=data["name"], email=data["email"], phone=data["phone"])
+        for pet_data in data["pets"]:
+            pet = Pet(
+                name=pet_data["name"],
+                species=pet_data["species"],
+                breed=pet_data["breed"],
+                age=pet_data["age"],
+            )
+            for task_data in pet_data["tasks"]:
+                task = Task(
+                    title=task_data["title"],
+                    task_type=task_data["task_type"],
+                    due_time=datetime.fromisoformat(task_data["due_time"]),
+                    priority=task_data["priority"],
+                    is_recurring=task_data["is_recurring"],
+                    is_completed=task_data["is_completed"],
+                    recurrence_interval=(
+                        timedelta(days=task_data["recurrence_interval_days"])
+                        if task_data["recurrence_interval_days"] else None
+                    ),
+                )
+                pet.add_task(task)
+            owner.add_pet(pet)
+        return owner
+
 
 class Scheduler:
     """Manages and organizes tasks across all pets."""
@@ -129,25 +197,6 @@ class Scheduler:
                         pet.add_task(next_task)
                         new_tasks.append(next_task)
         return new_tasks
-    
-    def find_next_available_slot(self, duration_minutes: int = 30) -> Optional[datetime]:
-        """
-        Find the next available time slot today with no tasks scheduled.
-        Returns a datetime for the earliest free slot, or None if day is full.
-        """
-        todays = self.sort_by_time()
-        now = datetime.now().replace(second=0, microsecond=0)
-        slot = now
-
-        for task in todays:
-            gap = (task.due_time - slot).total_seconds() / 60
-            if gap >= duration_minutes:
-                return slot
-            slot = task.due_time + timedelta(minutes=duration_minutes)
-
-        if slot.hour < 22:
-            return slot
-        return None
 
     def detect_conflicts(self) -> List[Task]:
         """Return tasks whose due times fall within 30 minutes of another task."""
@@ -160,3 +209,17 @@ class Scheduler:
                     conflicting.add(i)
                     conflicting.add(j)
         return [todays[i] for i in sorted(conflicting)]
+
+    def find_next_available_slot(self, duration_minutes: int = 30) -> Optional[datetime]:
+        """Find the next available time slot today with no tasks scheduled."""
+        todays = self.sort_by_time()
+        now = datetime.now().replace(second=0, microsecond=0)
+        slot = now
+        for task in todays:
+            gap = (task.due_time - slot).total_seconds() / 60
+            if gap >= duration_minutes:
+                return slot
+            slot = task.due_time + timedelta(minutes=duration_minutes)
+        if slot.hour < 22:
+            return slot
+        return None

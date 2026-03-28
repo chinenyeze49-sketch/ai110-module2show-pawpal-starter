@@ -8,7 +8,8 @@ st.set_page_config(page_title="PawPal+", page_icon="🐾", layout="centered")
 st.title("🐾 PawPal+")
 
 if "owner" not in st.session_state:
-    st.session_state.owner = None
+    loaded = Owner.load_from_json()
+    st.session_state.owner = loaded
 
 # ── Owner ─────────────────────────────────────────────────────────────────────
 st.subheader("Owner")
@@ -19,6 +20,11 @@ owner_phone = st.text_input("Phone", value="555-0100")
 if st.button("Set Owner"):
     st.session_state.owner = Owner(name=owner_name, email=owner_email, phone=owner_phone)
     st.success(f"Owner set: {owner_name}")
+
+if st.button("💾 Save Data"):
+    if st.session_state.owner:
+        st.session_state.owner.save_to_json()
+        st.success("Data saved to data.json!")
 
 if st.session_state.owner is None:
     st.info("Set an owner above to get started.")
