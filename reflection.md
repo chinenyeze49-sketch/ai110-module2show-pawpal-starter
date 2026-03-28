@@ -87,6 +87,11 @@ create the demo script, and write the pytest tests. The most helpful
 prompts were ones that included the file context and asked for specific 
 behaviors like conflict detection and priority sorting.
 
+I also used Claude to generate the full Streamlit UI in app.py, 
+connecting the Owner, Pet, Task, and Scheduler classes to real 
+buttons and forms. The most useful prompt included the full context 
+of what each button should do and which class method it should call.
+
 **b. Judgment and verification**
 
 - Describe one moment where you did not accept an AI suggestion as-is.
@@ -125,10 +130,19 @@ removing a pet and checking its tasks are cleared, and tasks due at midnight.
 
 - What part of this project are you most satisfied with?
 
-**b. What you would improve**
+The connection between the backend classes and the Streamlit UI worked 
+on the first try. The session_state approach kept the Owner object 
+alive between button clicks without any bugs.
 
+**b. What you would improve**
+I would add the ability to mark tasks as complete directly in the UI, 
+and show recurring tasks generating automatically the next day.
 - If you had another iteration, what would you improve or redesign?
 
 **c. Key takeaway**
 
 - What is one important thing you learned about designing systems or working with AI on this project?
+..
+Designing the system with clear class responsibilities first made 
+connecting it to a UI much easier. AI was most helpful when given 
+specific context about what already existed in the code.
