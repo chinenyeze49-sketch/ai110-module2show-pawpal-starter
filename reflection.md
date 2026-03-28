@@ -27,8 +27,29 @@ I designed four classes for PawPal+:
 
 - Did your design change during implementation?
 - If yes, describe at least one change and why you made it.
+**b. Design changes**
 
----
+After asking AI to review my skeleton, it flagged several issues I hadn't considered:
+
+1. **Dual task lists** — both `Pet` and `Scheduler` held separate task lists, 
+   meaning tasks added to a pet wouldn't automatically appear in the scheduler. 
+   I plan to fix this by having `Scheduler` iterate over pets directly instead 
+   of keeping its own copy.
+
+2. **Missing recurrence rule** — `is_recurring` was just a boolean with no 
+   information about how often a task repeats. I added a `recurrence_interval` 
+   field using `Optional[timedelta]` to fix this.
+
+3. **Unbounded priority** — `priority` was a plain int with no defined range, 
+   making `sort_by_priority()` unpredictable. I will constrain it to 1–5 or 
+   use an enum.
+
+4. **No conflict window** — `detect_conflicts()` had no way to measure overlap 
+   since `Task` had no duration. I plan to add a `duration` field to `Task`.
+
+These changes were suggested by AI review and I agreed with them after thinking 
+through how the methods would actually be implemented.
+
 
 ## 2. Scheduling Logic and Tradeoffs
 
