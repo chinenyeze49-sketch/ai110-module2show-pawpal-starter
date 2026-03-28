@@ -54,6 +54,11 @@ PawPal+ now includes algorithmic scheduling features:
 - **Conflict detection** — flags tasks scheduled within 30 minutes of each other
 - **Recurring tasks** — completed daily tasks automatically generate the next occurrence
 
+ **Next available slot** — finds the earliest free time gap in the 
+  day where a new task could be scheduled without conflict
+
+
+
 ## Testing PawPal+
 
 Run the test suite with:

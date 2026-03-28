@@ -129,6 +129,25 @@ class Scheduler:
                         pet.add_task(next_task)
                         new_tasks.append(next_task)
         return new_tasks
+    
+    def find_next_available_slot(self, duration_minutes: int = 30) -> Optional[datetime]:
+        """
+        Find the next available time slot today with no tasks scheduled.
+        Returns a datetime for the earliest free slot, or None if day is full.
+        """
+        todays = self.sort_by_time()
+        now = datetime.now().replace(second=0, microsecond=0)
+        slot = now
+
+        for task in todays:
+            gap = (task.due_time - slot).total_seconds() / 60
+            if gap >= duration_minutes:
+                return slot
+            slot = task.due_time + timedelta(minutes=duration_minutes)
+
+        if slot.hour < 22:
+            return slot
+        return None
 
     def detect_conflicts(self) -> List[Task]:
         """Return tasks whose due times fall within 30 minutes of another task."""
