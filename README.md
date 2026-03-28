@@ -54,3 +54,21 @@ PawPal+ now includes algorithmic scheduling features:
 - **Conflict detection** — flags tasks scheduled within 30 minutes of each other
 - **Recurring tasks** — completed daily tasks automatically generate the next occurrence
 
+## Testing PawPal+
+
+Run the test suite with:
+```
+python -m pytest tests/ -v
+```
+
+Tests cover:
+- Task completion status
+- Adding tasks to pets
+- Sorting by time and priority
+- Recurring task generation
+- Conflict detection
+- Edge cases (no pets, no tasks)
+
+**Confidence level: ⭐⭐⭐⭐ (4/5)** — all 10 tests pass. Edge cases 
+like midnight tasks and cross-day recurring tasks would be tested next.
+
