@@ -1,4 +1,4 @@
-"""PawPal+ Streamlit UI — connected to pawpal_system.py logic layer."""
+"""PawPal+ Streamlit UI — full smart scheduling interface."""
 
 import streamlit as st
 from datetime import datetime, timedelta
@@ -7,24 +7,17 @@ from pawpal_system import Owner, Pet, Task, Scheduler
 st.set_page_config(page_title="PawPal+", page_icon="🐾", layout="centered")
 st.title("🐾 PawPal+")
 
-# ── Step 2: Session state memory ──────────────────────────────────────────────
-# Streamlit reruns top-to-bottom on every interaction.
-# We store the Owner object in session_state so it persists between clicks.
 if "owner" not in st.session_state:
     st.session_state.owner = None
 
-# ── Owner setup ───────────────────────────────────────────────────────────────
+# ── Owner ─────────────────────────────────────────────────────────────────────
 st.subheader("Owner")
 owner_name = st.text_input("Your name", value="Alex Rivera")
 owner_email = st.text_input("Email", value="alex@example.com")
 owner_phone = st.text_input("Phone", value="555-0100")
 
 if st.button("Set Owner"):
-    st.session_state.owner = Owner(
-        name=owner_name,
-        email=owner_email,
-        phone=owner_phone,
-    )
+    st.session_state.owner = Owner(name=owner_name, email=owner_email, phone=owner_phone)
     st.success(f"Owner set: {owner_name}")
 
 if st.session_state.owner is None:
@@ -33,10 +26,9 @@ if st.session_state.owner is None:
 
 owner = st.session_state.owner
 
-# ── Step 3: Add a Pet ─────────────────────────────────────────────────────────
+# ── Add a Pet ─────────────────────────────────────────────────────────────────
 st.divider()
 st.subheader("Add a Pet")
-
 col1, col2 = st.columns(2)
 with col1:
     pet_name = st.text_input("Pet name", value="Buddy")
@@ -55,7 +47,7 @@ if owner.get_pets():
 else:
     st.info("No pets yet.")
 
-# ── Step 3: Add a Task ────────────────────────────────────────────────────────
+# ── Add a Task ────────────────────────────────────────────────────────────────
 st.divider()
 st.subheader("Add a Task")
 
@@ -89,29 +81,46 @@ else:
         selected_pet.add_task(task)
         st.success(f"Task '{task_title}' added to {selected_pet_name}!")
 
-# ── Generate Schedule ─────────────────────────────────────────────────────────
+# ── Schedule ──────────────────────────────────────────────────────────────────
 st.divider()
 st.subheader("Today's Schedule")
 
+sort_option = st.radio("Sort by", ["Priority", "Time"], horizontal=True)
+filter_option = st.radio("Show", ["All", "Pending only", "Completed only"], horizontal=True)
+
 if st.button("Generate Schedule"):
     scheduler = Scheduler(owner=owner)
-    todays_tasks = scheduler.sort_by_priority()
 
-    if not todays_tasks:
-        st.info("No tasks due today.")
+    if sort_option == "Priority":
+        tasks = scheduler.sort_by_priority()
     else:
-        for task in todays_tasks:
-            status = "✓" if task.is_completed else "○"
-            st.markdown(
-                f"**[{status}] {task.due_time.strftime('%H:%M')}** "
-                f"| Priority {task.priority} | {task.title} `{task.task_type}`"
-            )
+        tasks = scheduler.sort_by_time()
 
-        conflicts = scheduler.detect_conflicts()
-        if conflicts:
-            st.warning("⚠ Conflicts detected:")
-            for t in conflicts:
-                st.markdown(f"- {t.title} @ {t.due_time.strftime('%H:%M')}")
-        else:
-            st.success("No scheduling conflicts!")
+    if filter_option == "Pending only":
+        tasks = [t for t in tasks if not t.is_completed]
+    elif filter_option == "Completed only":
+        tasks = [t for t in tasks if t.is_completed]
 
+    if not tasks:
+        st.info("No tasks to show.")
+    else:
+        table_data = [
+            {
+                "Time": t.due_time.strftime("%H:%M"),
+                "Priority": t.priority,
+                "Task": t.title,
+                "Type": t.task_type,
+                "Done": "✓" if t.is_completed else "○",
+            }
+            for t in tasks
+        ]
+        st.table(table_data)
+
+    # Conflict warnings
+    conflicts = scheduler.detect_conflicts()
+    if conflicts:
+        st.warning("⚠ Scheduling conflicts detected:")
+        for t in conflicts:
+            st.markdown(f"- **{t.title}** @ {t.due_time.strftime('%H:%M')} — within 30 mins of another task")
+    else:
+        st.success("No scheduling conflicts!")
