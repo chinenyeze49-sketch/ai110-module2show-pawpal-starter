@@ -122,6 +122,35 @@ The full Mermaid source lives in [`architecture.mmd`](architecture.mmd) and the 
 
 ---
 
+## Core classes
+
+The deterministic domain layer in `pawpal_system.py` is built around four classes. Each one is shown in [`assets/uml-diagram.png`](assets/uml-diagram.png) with attributes and methods.
+
+| Class | Responsibility | Key attributes | Key methods |
+|---|---|---|---|
+| `Owner` | Top-level user — owns one or more pets, persists state to JSON | `name`, `email`, `phone`, `pets` | `add_pet`, `remove_pet`, `get_pets`, `save_to_json`, `load_from_json` |
+| `Pet` | An individual animal with its own task list | `name`, `species`, `breed`, `age`, `tasks` | `add_task`, `get_tasks` |
+| `Task` | A single care action — feeding, walk, medication, appointment | `title`, `task_type`, `due_time`, `priority`, `is_recurring`, `is_completed`, `recurrence_interval` | `mark_complete`, `is_due_today`, `next_occurrence` |
+| `Scheduler` | Reads across all of an owner's pets to organize tasks; never holds its own task list | reference to `Owner` | `sort_by_priority`, `sort_by_time`, `filter_by_status`, `filter_by_pet`, `detect_conflicts`, `find_next_available_slot`, `generate_recurring_tasks` |
+
+---
+
+## Algorithmic scheduling features
+
+`Scheduler` implements seven algorithmic features that operate across **all** of an owner's pets, not a single pet:
+
+- **Sort by priority** (`sort_by_priority`) — orders today's tasks 1 (highest) → 5 (lowest), breaking ties by time.
+- **Sort by time** (`sort_by_time`) — orders today's tasks earliest to latest.
+- **Filter by status** (`filter_by_status`) — returns only pending or only completed tasks.
+- **Filter by pet** (`filter_by_pet`) — returns today's tasks for a single pet by name.
+- **Conflict detection** (`detect_conflicts`) — flags any two tasks scheduled within a 30-minute window, even across different pets.
+- **Recurring task generation** (`generate_recurring_tasks`) — for every completed recurring task, automatically appends the next occurrence based on its `recurrence_interval`.
+- **Next available slot** (`find_next_available_slot`) — finds the earliest 30-minute gap in today's schedule where a new task could fit without conflict.
+
+Every feature is verified by `tests/test_pawpal.py` and the held-out eval items in `eval/run_eval.py`.
+
+---
+
 ## Setup
 
 ```bash
