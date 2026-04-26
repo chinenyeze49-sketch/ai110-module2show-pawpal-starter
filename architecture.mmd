@@ -1,0 +1,57 @@
+flowchart TD
+    subgraph User["👤 User"]
+        UI["Streamlit UI<br/>(app.py)"]
+        CLI["Demo CLI<br/>(main.py)"]
+    end
+
+    subgraph Domain["🐾 Domain Layer (deterministic, AI-free)"]
+        Owner[Owner]
+        Pet[Pet]
+        Task[Task]
+        Scheduler[Scheduler]
+    end
+
+    subgraph AI["🤖 AI Layer (ai_assistant.py)"]
+        Guardrail{"Safety<br/>guardrail"}
+        Provider["Provider<br/>(mock / Anthropic / OpenAI)"]
+        Confidence["Confidence<br/>scorer"]
+        AIResp[AIResponse]
+    end
+
+    subgraph Reliability["🛡 Reliability"]
+        Logging[("logs/<br/>pawpal.log")]
+        Tests["pytest tests/<br/>(36 tests)"]
+        Eval["eval/run_eval.py<br/>(10-item set)"]
+    end
+
+    subgraph Storage["💾 Storage"]
+        DataJson[("data.json")]
+    end
+
+    UI --> Owner
+    UI --> Scheduler
+    UI --> Guardrail
+    CLI --> Scheduler
+    CLI --> Guardrail
+
+    Owner --> Pet
+    Pet --> Task
+    Scheduler --> Owner
+    Scheduler -- "sort_by_priority<br/>detect_conflicts<br/>find_next_slot" --> Task
+
+    Owner -. "save / load" .-> DataJson
+
+    Guardrail -- "blocks vet/medical<br/>questions" --> AIResp
+    Guardrail -- "safe input" --> Provider
+    Provider --> Confidence
+    Confidence --> AIResp
+    AIResp --> UI
+    AIResp --> CLI
+
+    Scheduler -- "today's plan" --> Provider
+
+    Owner -. "logs operations" .-> Logging
+    Provider -. "logs calls + confidence" .-> Logging
+    Tests --> Domain
+    Tests --> AI
+    Eval --> AI
